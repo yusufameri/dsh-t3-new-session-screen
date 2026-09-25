@@ -1,0 +1,67 @@
+{
+  "name": "dsh-t3-new-session-screen",
+  "version": "1.0.0",
+  "description": "T3 Code's New Session screen for DeepSeek Harness: the \"What should we build in <project>?\" headline with an inline project dropdown, a reasoning-effort picker and a git branch picker in the composer.",
+  "type": "module",
+  "license": "MIT",
+  "author": "yusufameri",
+  "homepage": "https://github.com/yusufameri/dsh-t3-new-session-screen#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yusufameri/dsh-t3-new-session-screen.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yusufameri/dsh-t3-new-session-screen/issues"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "dsh",
+    "cordis-plugin",
+    "new-session",
+    "t3code",
+    "reasoning-effort",
+    "git-branch"
+  ],
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-model-selection",
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-ui-workspace"
+      ]
+    },
+    "manifestVersion": 1
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/schemastery": "*"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    },
+    "@deepseek-ai/schemastery": {
+      "optional": true
+    }
+  }
+}

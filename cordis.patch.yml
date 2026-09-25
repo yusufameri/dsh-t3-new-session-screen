@@ -1,0 +1,10 @@
+# T3 new-session-screen bundle patch: one row inserting the bundle's Host half.
+#
+# The Host half (`./index`) registers the fenced `/t3-new-session/api` route the
+# Client half calls for git facts (current branch, branch list, checkout) and
+# for its own configuration. The Client half (`./client`) renders the T3-styled
+# new-session screen: the "What should we build in <project>?" headline with an
+# inline project dropdown, the reasoning-effort picker, and the branch strip.
+- insert:
+    - id: t3-new-session-screen
+      name: 'dsh-t3-new-session-screen'
