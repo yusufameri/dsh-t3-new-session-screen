@@ -534,18 +534,8 @@ window.__ModuleLoader__.load({
       // Pick one row: the owner adopts it and moves the blank session there.
       const choose = useCallback((workspaceId) => {
         heroStore.set({ ...heroStore.get(), open: false })
-        if (typeof window !== 'undefined') {
-          window.__t3nssPick = { picked: workspaceId, hasOnPick: typeof onPick, selectedId }
-        }
-        const outcome = onPick?.(workspaceId)
-        if (outcome && typeof outcome.catch === 'function') {
-          outcome.catch((error) => {
-            if (typeof window !== 'undefined') {
-              window.__t3nssPick = { ...window.__t3nssPick, failed: String(error?.message ?? error) }
-            }
-          })
-        }
-      }, [onPick, selectedId])
+        onPick?.(workspaceId)
+      }, [onPick])
 
       if (!open) return null
 
@@ -648,25 +638,16 @@ window.__ModuleLoader__.load({
       // is a placeholder so switching the preference needs no reload.
       const wanted = config.effortSlot === 'right' ? 'conversation.input.right' : 'conversation.input.left'
       const efforts = reasoning?.efforts ?? []
-      const skip = !config.effortEnabled ? 'disabled'
-        : seat !== wanted ? 'other-seat'
-          : face.available !== true ? 'unavailable'
-            : current === null || current === undefined ? 'no-current'
-              : efforts.length === 0 ? 'no-efforts'
-                : null
-      if (typeof window !== 'undefined') {
-        window.__t3nss = window.__t3nss ?? {}
-        window.__t3nss[seat] = {
-          skip, wanted, seat, available: face.available, status: state.status, reason: face.reason,
-          current: current === null || current === undefined
-            ? null
-            : `${current.provider}/${current.model}/${current.reasoningEffort ?? '-'}`,
-          groups: (state.groups ?? []).length,
-          efforts: efforts.map(level => level.id),
-          error: state.error,
-        }
-      }
-      if (skip !== null) return null
+      // Every way this control can legitimately be absent. A model that
+      // advertises no effort vocabulary renders nothing at all — effort is a
+      // per-model capability, not a global setting.
+      const absent = !config.effortEnabled
+        || seat !== wanted
+        || face.available !== true
+        || current === null
+        || current === undefined
+        || efforts.length === 0
+      if (absent) return null
 
       const effective = current.reasoningEffort ?? reasoning?.defaultEffort
       const label = effective === undefined
@@ -937,7 +918,7 @@ window.__ModuleLoader__.load({
 }
 .t3nss-project {
   appearance: none; margin: 0; padding: 0 1px; border: none; background: transparent;
-  border-bottom: 1px dotted color-mix(in srgb, var(--dsw-alias-label-primary) 55%, transparent);
+  border-bottom: 1px dotted color-mix(in srgb, var(--dsw-alias-label-primary) 68%, transparent);
   color: inherit; font: inherit; line-height: inherit; letter-spacing: inherit; cursor: pointer;
   max-width: min(22rem, 55cqw); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   transition: border-bottom-color 120ms ease;
@@ -1068,7 +1049,7 @@ window.__ModuleLoader__.load({
           },
           select: selection => (available ? directory.select(selection) : Promise.resolve(undefined)),
         }
-      } catch (error) {
+      } catch {
         // A session with no resolved scope has no directory and no control; the
         // inert face keeps the seat's hook order intact.
         return {
@@ -1076,7 +1057,6 @@ window.__ModuleLoader__.load({
           directory: INERT_DIRECTORY,
           load: () => {},
           select: () => Promise.resolve(undefined),
-          reason: error instanceof Error ? error.message : String(error),
         }
       }
     }

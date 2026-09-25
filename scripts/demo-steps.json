@@ -1,0 +1,33 @@
+[
+  { "label": "hero", "wait": 1400 },
+
+  { "label": "open the project menu from the headline", "click": ".t3nss-project" },
+  { "wait": 1800 },
+  { "label": "pick the project repo",
+    "eval": "(() => { const t=[...document.querySelectorAll('.t3nss-card .t3nss-row')].find(r=>/dsh-t3-new-session-screen/.test(r.textContent||'')); if(!t) return 'NOT FOUND'; t.click(); return 'picked'; })()" },
+  { "wait": 2400 },
+
+  { "label": "open the branch picker", "click": ".t3nss-stripRight" },
+  { "wait": 1700 },
+  { "label": "switch to feature/reasoning-effort",
+    "eval": "(() => { const t=[...document.querySelectorAll('.t3nss-card .t3nss-row')].find(r=>/feature\\/reasoning-effort/.test(r.textContent||'')); if(!t) return 'NOT FOUND'; t.click(); return 'switched'; })()" },
+  { "wait": 2400 },
+
+  { "label": "back to main", "click": ".t3nss-stripRight" },
+  { "wait": 1500 },
+  { "eval": "(() => { const t=[...document.querySelectorAll('.t3nss-card .t3nss-row')].find(r=>/^main/.test(r.textContent||'')); if(!t) return 'NOT FOUND'; t.click(); return 'switched back'; })()" },
+  { "wait": 2200 },
+
+  { "label": "open the reasoning-effort picker", "click": ".t3nss-chip" },
+  { "wait": 1800 },
+  { "label": "raise the effort to Max",
+    "eval": "(() => { const t=[...document.querySelectorAll('.t3nss-card .t3nss-row')].find(r=>/^Max/.test(r.textContent||'')); if(!t) return 'NOT FOUND'; t.click(); return 'Max'; })()" },
+  { "wait": 2200 },
+
+  { "label": "restore High", "click": ".t3nss-chip" },
+  { "wait": 1500 },
+  { "eval": "(() => { const t=[...document.querySelectorAll('.t3nss-card .t3nss-row')].find(r=>/^High/.test(r.textContent||'')); if(!t) return 'NOT FOUND'; t.click(); return 'High'; })()" },
+  { "wait": 1800 },
+  { "key": "Escape" },
+  { "wait": 800 }
+]

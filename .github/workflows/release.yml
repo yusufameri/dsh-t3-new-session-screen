@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Check the tag matches package.json
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$pkg" ]; then
+            echo "tag $tag does not match package.json $pkg" >&2
+            exit 1
+          fi
+
+      - name: Check both halves parse
+        run: |
+          node --check index.js
+          node --check client.js
+          node -e "import('./index.js').then(m => {
+            if (typeof m.apply !== 'function') throw new Error('index.js exports no apply')
+            if (m.inject === undefined) throw new Error('index.js exports no inject')
+            if (m.Config === undefined) throw new Error('index.js exports no Config')
+          })"
+
+      - name: Publish to npm
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Attach the tarball to a GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          npm pack
+          mv dsh-t3-new-session-screen-*.tgz dsh-t3-new-session-screen.tgz
+          gh release create "$GITHUB_REF_NAME" dsh-t3-new-session-screen.tgz \
+            --title "$GITHUB_REF_NAME" --generate-notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

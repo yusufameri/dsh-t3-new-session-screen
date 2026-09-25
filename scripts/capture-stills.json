@@ -1,0 +1,24 @@
+[
+  { "label": "restore the hero", "wait": 500 },
+  { "eval": "(() => { const cards=[...document.querySelectorAll('.t3nss-card')]; if(cards.length) document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})); return 'ok'; })()" },
+  { "wait": 700 },
+  { "shot": "assets/hero.png" },
+
+  { "label": "project menu", "click": ".t3nss-project" },
+  { "wait": 1400 },
+  { "shot": "assets/project-menu.png" },
+  { "eval": "(() => { document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})); return 'closed'; })()" },
+  { "wait": 800 },
+
+  { "label": "branch menu", "click": ".t3nss-stripRight" },
+  { "wait": 1400 },
+  { "shot": "assets/branch-picker.png" },
+  { "eval": "(() => { document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})); return 'closed'; })()" },
+  { "wait": 800 },
+
+  { "label": "effort menu", "click": ".t3nss-chip" },
+  { "wait": 1400 },
+  { "shot": "assets/effort-picker.png" },
+  { "eval": "(() => { document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})); return 'closed'; })()" },
+  { "wait": 800 }
+]
