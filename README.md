@@ -45,6 +45,8 @@ Harness's own services. Please support the original project.
   `git checkout <ref>`. A **Create new ref** row appears once the query names a
   ref that does not exist yet, and runs `git checkout -b`. DSH ships no git
   surface of any kind, so every fact here comes from this bundle's Host half.
+  The strip is aligned on the composer's shared width axis, not on the card — see
+  [Alignment](#alignment).
 
 ## Screenshots
 
@@ -92,7 +94,7 @@ bundle's row in the profile's `cordis.patch.yml`:
 | `hideWorkspaceChip` | `true` | Hide the shipped workspace chip under the headline, which the headline supersedes. |
 | `effortEnabled` | `true` | Reasoning-effort picker in the composer tool row. |
 | `effortSlot` | `left` | Which composer seat the effort picker occupies: `left` (beside the permission and plan controls) or `right` (beside the model seat). |
-| `branchEnabled` | `true` | Git branch strip on the new-session screen. |
+| `branchEnabled` | `true` | Git branch strip under the composer, on the new-session screen and in an active session. |
 | `branchCreateEnabled` | `true` | Offer **Create new ref** (`git checkout -b`) in the branch picker. |
 | `gitEnabled` | `true` | The git bridge behind the branch strip. Turning it off leaves the strip absent. |
 | `gitTimeoutMs` | `30000` | Budget of one `git` child process. |
@@ -111,7 +113,7 @@ The whole screen is contributed through DSH's own seams.
 | Project roster | The root `useWorkspaces` standard hook, fed by `ctx.slots.provideRoot`. |
 | New project | `ctx.uiWorkspace.pickDirectory()` then `ctx.workspaces.create({ path })`. |
 | Reasoning effort | `conversation.input.left` / `.right` (list), reading `ctx.modelDirectories.directoryFor(sessionId)`. |
-| Branch strip | `conversation.input.dock` on the blank-session hero and `conversation.composer.dock` once a session has a first turn. |
+| Branch strip | `conversation.input.dock` (one seat for both phases). |
 | Working directory | `ctx.sessions.list.getSnapshot().byId[sessionId]?.cwd`. |
 | Git | The Host half's fenced `POST /t3-new-session/api` route (`config`, `git.status`, `git.branches`, `git.checkout`, `git.createBranch`), running `git` through `node:child_process`. |
 
@@ -129,6 +131,42 @@ Two details are load-bearing rather than incidental:
   Schemastery one — Cordis needs nothing more than a synchronous
   `~standard.validate`.
 
+## Alignment
+
+The screen is measured against T3's own numbers rather than eyeballed. T3's
+composer shell is `max-w-3xl` with `--chat-composer-drawer-inset: 1.375rem`, and
+its context strip is inset by two of those (44px) with `ps-1 pe-2`. DSH's axis is
+`--dsh-composer-side-clearance` (16px), `--dsh-composer-dock-inset` (8px) and
+`--dsh-composer-card-max-width`, and the shipped `QueueDock` derives its width
+from the same three values. The strip uses that derivation, so with the shipped
+profile it lands on the card's **content** box:
+
+| Element | X range | |
+|---|---|---|
+| Composer card | 498..1375 | 877px |
+| Composer tool row, content box | **506..1367** | 861px |
+| Headline stack (`HeroShell`) | **506..1367** | 861px |
+| **Branch strip** | **506..1367** | 861px |
+
+All three share centre **936**, and the strip's text sits **4px** under the card —
+which is exactly what T3's `-mt-4` + `pt-5` pair nets out to. Inside the tool row
+the reasoning-effort control is 28px tall and vertically centred with the attach
+button and the permission control (all `513..541`).
+
+Two details are load-bearing and easy to regress:
+
+- `box-sizing: border-box` on the strip. Without it the horizontal padding adds
+  to `width: 100%` and the strip overflows its stack by the padding on each side
+  — which is what it did before this was measured.
+- The `width` / `max-width` pair. On the hero the stack is already inset by one
+  side clearance per edge, so both clearances and both dock insets come off the
+  percentage. In an active session the stack is the full seat width and
+  `max-width` does the clamping while `margin-inline: auto` re-centres it — the
+  same 861px at the same 506px start, from a different parent.
+
+`scripts/measure-alignment.mjs` re-checks every number above against a running
+page and exits non-zero on a regression.
+
 ## Differences from T3
 
 DSH has no equivalent of these T3 concepts, so the port leaves them out rather
@@ -138,10 +176,13 @@ than faking them:
   `Current checkout` / `New worktree` selector. DSH has no worktree concept, so
   the strip's left label reports the checkout and is not a menu.
 - **No pull-request badge** on the strip.
-- **The strip sits above the composer card on the new-session screen.** DSH
-  renders no extension seat below the card until a session has a first turn, so
-  the hero uses the full-width seat above it. Once a session is underway the
-  strip moves below the card, matching T3.
+- **The strip is ordered below the card rather than laid out there.** DSH's
+  blank-session hero renders no extension seat below the input card, so the
+  strip is contributed to the seat above it and moved down with `order`. Every
+  wrapper the renderer puts around a slot occupant is a contents-only box, so
+  the strip is a flex item of the composer stack and the ordering works without
+  touching shipped CSS. In an active session DSH's own context meter occupies
+  the space directly under the card, so the strip sits below that instead.
 
 One behaviour worth knowing: DSH's `session/selectModel` writes the session
 selection **and** the deployment default, so picking an effort level also makes
@@ -168,6 +209,14 @@ record frames), `encode-gif.py` turns those frames into the GIF, and
 CDP_PORT=9333 node scripts/record.mjs scripts/capture-stills.json --no-frames
 CDP_PORT=9333 node scripts/record.mjs scripts/demo-steps.json /tmp/frames
 python3 scripts/encode-gif.py /tmp/frames assets/demo.gif
+```
+
+`scripts/measure-alignment.mjs` is the alignment check described in
+[Alignment](#alignment). Point it at a page running this plugin and it fails with
+a non-zero exit if any of those numbers move:
+
+```sh
+CDP_PORT=9333 node scripts/measure-alignment.mjs
 ```
 
 ## License

@@ -719,7 +719,10 @@ window.__ModuleLoader__.load({
      * @returns the strip, portalled menu included.
      */
     function BranchPicker(props) {
-      const { t, cwd } = props
+      const { t, cwd, session } = props
+      // `conversation.input.dock` hands the owner's InputZone through, so the
+      // strip can tell the hero from an active composer without a second seat.
+      const phase = session?.blank === true ? 'hero' : 'active'
       const config = useSnapshot(configStore)
       const [menuOpen, setMenuOpen] = useState(false)
       const [query, setQuery] = useState('')
@@ -798,9 +801,6 @@ window.__ModuleLoader__.load({
       }, [busy, cwd, refresh])
 
       if (!config.branchEnabled || config.gitEnabled !== true) return null
-      // The input-dock seat doubles as the hero's strip only while the session is
-      // still blank; an active session gets the composer-dock seat instead.
-      if (props.heroOnly === true && props.session?.blank !== true) return null
 
       const normalized = query.trim().toLowerCase()
       const sanitized = query.trim().replace(/\s+/g, '-')
@@ -887,7 +887,13 @@ window.__ModuleLoader__.load({
             format(t('branch.failed'), { message: status.error })),
       )
 
-      return h('div', { ref: rootRef, className: 't3nss-strip' },
+      return h('div', {
+        ref: rootRef,
+        className: 't3nss-strip',
+        // The hero stack gaps its rows 8px; an active composer stack gaps 6px.
+        // Both want the strip 4px under the card, so the margin differs by phase.
+        'data-phase': phase,
+      },
         h('span', { className: 't3nss-stripLeft', title: cwd ?? '' },
           h(FolderIcon, { size: 14, className: 't3nss-stripGlyph' }),
           h('span', null, t('branch.checkout')),
@@ -943,11 +949,51 @@ window.__ModuleLoader__.load({
 .t3nss-chipLabel { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .t3nss-chipChevron { flex: 0 0 auto; opacity: 0.55; }
 
+/* The strip aligns on the composer's shared width axis: the card's CONTENT box,
+   not the card itself. DSH publishes the three numbers that define that axis —
+   the stack's side clearance, the dock inset, and the card cap — and the shipped
+   QueueDock derives its width the same way. With the defaults (16 / 8 / 877px)
+   the strip's border box lands on 506..1367, which is exactly the HeroShell
+   stack's box and the composer tool row's content box: the attach button's left
+   edge and the send button's right edge. Two details are load-bearing:
+
+     - box-sizing. Without it the horizontal padding adds to the 100% and the
+       strip overflows its stack by the padding on each side.
+     - the width/max-width pair. In the hero the stack is already inset by one
+       side clearance per edge, so both clearances come off; in an active session
+       the stack is the full seat width and max-width does the clamping, while
+       margin-inline auto centres the result on the card's axis. Either way the
+       strip is 861px wide starting at 506. */
 .t3nss-strip {
+  box-sizing: border-box;
+  flex: none;
+  /* T3 keeps its context strip under the card (-mt-4 + pt-5 nets a 4px gap).
+     DSH has no seat below the card on the blank-session hero, but the strip is a
+     flex item of the composer stack — every wrapper the renderer puts around a
+     slot occupant is a contents-only box — so ordering it after them renders it
+     below the card while leaving the card first in authoring order. */
+  order: 2;
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  width: 100%; min-width: 0; padding: 0 4px 2px;
+  min-width: 0;
+  width: calc(
+    100% -
+    var(--dsh-composer-side-clearance) - var(--dsh-composer-side-clearance) -
+    var(--dsh-composer-dock-inset) - var(--dsh-composer-dock-inset)
+  );
+  max-width: calc(
+    var(--dsh-composer-card-max-width) -
+    var(--dsh-composer-dock-inset) - var(--dsh-composer-dock-inset)
+  );
+  margin: 0 auto;
+  padding: 0 var(--dsh-composer-dock-inset);
   color: var(--dsw-alias-label-caption); font-size: 12px;
 }
+/* Both phases want the strip's text 4px under the card; the stack gap differs
+   between them (8px on the hero, 6px on an active composer), so the pull-up
+   differs with it. */
+.t3nss-strip[data-phase='hero'] { margin-top: -4px; }
+.t3nss-strip[data-phase='active'] { margin-top: -2px; }
+
 .t3nss-stripLeft { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
 .t3nss-stripLeft > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .t3nss-stripRight {
@@ -1129,23 +1175,18 @@ window.__ModuleLoader__.load({
         }, EffortPicker))
       }
 
-      // 4. The branch strip. Two seats, because DSH renders `conversation.input.dock`
-      //    on the blank-session hero (above the card) but `conversation.composer.dock`
-      //    only for an active session (below it). Each occupant self-gates to
-      //    exactly one phase, so the two never show at once.
+      // 4. The branch strip, on `conversation.input.dock` for both phases. One
+      //    seat is enough: that slot's parent is the composer stack in the hero
+      //    AND in an active session, and the strip's `max-width` plus
+      //    `margin-inline: auto` centre it on the same axis as the card in both.
+      //    Its `order` moves it below the card (see the CSS), which is where T3
+      //    keeps its context strip and where DSH's own dock would not fit it.
       ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
         name: 'conversation.input.dock',
         id: 't3-new-session-branch',
         order: 20,
         locale: NS,
-        inject: sessionId => ({ heroOnly: true, ...branchFace(ctx, sessionId) }),
-      }, BranchPicker))
-      ctx.slots.inject('conversation.composer.dock', () => ctx.slots.register({
-        name: 'conversation.composer.dock',
-        id: 't3-new-session-branch',
-        order: 20,
-        locale: NS,
-        inject: sessionId => ({ heroOnly: false, ...branchFace(ctx, sessionId) }),
+        inject: sessionId => branchFace(ctx, sessionId),
       }, BranchPicker))
     }
 
