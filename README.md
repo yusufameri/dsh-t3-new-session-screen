@@ -154,17 +154,18 @@ profile it lands on the card's **content** box:
 | **Branch strip** | **506..1367** | 861px |
 | **Hero preset seat** (right-aligned) | 1218..**1367** | 149px |
 
-All three share centre **936**, and the strip's text sits **4px** under the card —
-which is exactly what T3's `-mt-4` + `pt-5` pair nets out to. Inside the tool row
-the reasoning-effort control is 28px tall and vertically centred with the attach
-button and the permission control (all `513..541`).
+All four of those boxes share centre **936**, and the strip's text sits **4px**
+under the card — which is exactly what T3's `-mt-4` + `pt-5` pair nets out to.
+Inside the tool row the reasoning-effort control is 28px tall and vertically
+centred with the attach button and the permission control (all `513..541`).
 
 The preset seat is the row's only *label-sized* element, so only its right edge is
 a fixed number: the seat is content-sized (149px for `Standard mode`), and its
-left edge follows whatever DSH names the preset. Its right edge lands on the same
-1367 as the strip, the headline stack and the tool row's content box, which is
-also the send button's and the strip's trailing control's right edge — the row
-reads as one trailing column above the card rather than a chip mid-row.
+left edge follows whatever DSH names the preset — which is why it is not in the
+centre group above. Its right edge lands on the same 1367 as the strip, the
+headline stack and the tool row's content box, which is also the send button's and
+the strip's trailing control's right edge — the row reads as one trailing column
+above the card rather than a chip mid-row.
 
 Two details are load-bearing and easy to regress:
 

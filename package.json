@@ -1,6 +1,6 @@
 {
   "name": "dsh-t3-new-session-screen",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "T3 Code's New Session screen for DeepSeek Harness: the \"What should we build in <project>?\" headline with an inline project dropdown, a reasoning-effort picker and a git branch picker in the composer.",
   "type": "module",
   "license": "MIT",
