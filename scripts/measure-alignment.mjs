@@ -83,9 +83,10 @@ async function evaluate(expression) {
  * The measurement probe, kept in one expression so the page is read atomically.
  *
  * Every anchor is derived structurally rather than by CSS-module class name: the
- * hashes change per build, so the tool row is found by walking up from this
- * plugin's own effort control to the nearest flex row wide enough to be the
- * card's tool row, and the neighbourhood is every other button inside it.
+ * hashes change per build, so the card and its tool row are reached from the
+ * composer-bar seat's own first control, the hero workspace row from the seat the
+ * headline shares with the shipped chip, and the neighbourhood is every button in
+ * the tool row. This plugin is the only thing measured by its own class names.
  */
 const PROBE = `(() => {
   const rect = (el) => {
@@ -94,20 +95,28 @@ const PROBE = `(() => {
   }
   const strip = document.querySelector('.t3nss-strip')
   const chip = document.querySelector('.t3nss-chip')
-  // The tool row: nearest flex ancestor of the effort control that is wide
-  // enough to span the card (the inner leading group is only a few hundred px).
+  // The composer card and its tool row, found from SHIPPED structure only: the
+  // bar occupant's first control is the attach button, the first flex box wide
+  // enough above it is the tool row, and that row's first rounded ancestor is the
+  // card (the tool row and the card share a width, so only the corner tells them
+  // apart). The plugin's own effort control is NOT a usable anchor: a model that
+  // advertises no effort levels renders no control at all — 0.2.0-rc.2 with a
+  // non-reasoning model is exactly that — and the card's radius is 22px on the
+  // 0.1.x line and 28px on 0.2.0-rc.2, so it is matched by size, not by a literal
+  // that would silently stop matching on the next version bump.
+  const barOccupant = document.querySelector('[data-slot="conversation.composer.bar"] > *')
+  const firstControl = barOccupant ? barOccupant.querySelector('button') : null
   let row = null
-  for (let n = chip ? chip.parentElement : null; n !== null; n = n.parentElement) {
+  for (let n = firstControl ? firstControl.parentElement : null; n !== null; n = n.parentElement) {
     const cs = getComputedStyle(n)
     if (cs.display === 'flex' && n.getBoundingClientRect().width > 600) { row = n; break }
   }
   const rowStyle = row ? getComputedStyle(row) : null
 
-  // The card: nearest ancestor of the effort control carrying the composer's
-  // radius. It is NOT an ancestor of the strip, which is a sibling branch.
   let cardEl = null
-  for (let n = chip ? chip.parentElement : null; n !== null; n = n.parentElement) {
-    if (getComputedStyle(n).borderRadius.startsWith('22px')) { cardEl = n; break }
+  for (let n = row ? row.parentElement : null; n !== null; n = n.parentElement) {
+    if (n.getBoundingClientRect().width > 600
+      && parseFloat(getComputedStyle(n).borderRadius) >= 12) { cardEl = n; break }
   }
 
   const neighbours = row
@@ -160,15 +169,21 @@ const PROBE = `(() => {
   }
 })()`
 
-// Give the page a moment to settle after a reload, then open a blank session.
-await evaluate(`(() => {
-  const dismiss = [...document.querySelectorAll('button')]
-    .filter(b => /configure later|continue/i.test(b.textContent || ''))
-  dismiss.forEach(b => b.click())
-  return dismiss.length
-})()`)
-await new Promise(resolve => setTimeout(resolve, 1500))
-const hasStrip = await evaluate(`!!document.querySelector('.t3nss-strip')`)
+// A page that already shows the screen is left alone. The onboarding modals
+// (and their Continue / Configure later buttons) only have to be cleared when the
+// plugin is not mounted yet — clicking them blind on a live app is how a
+// measurement run would dismiss a dialog the user was reading.
+let hasStrip = await evaluate(`!!document.querySelector('.t3nss-strip')`)
+if (!hasStrip) {
+  await evaluate(`(() => {
+    const dismiss = [...document.querySelectorAll('button')]
+      .filter(b => /configure later|continue/i.test(b.textContent || ''))
+    dismiss.forEach(b => b.click())
+    return dismiss.length
+  })()`)
+  await new Promise(resolve => setTimeout(resolve, 1500))
+  hasStrip = await evaluate(`!!document.querySelector('.t3nss-strip')`)
+}
 if (!hasStrip) {
   await evaluate(`(() => {
     const b = [...document.querySelectorAll('button')]
