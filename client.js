@@ -436,23 +436,31 @@ window.__ModuleLoader__.load({
           format(template, { project: label }))
       }
 
-      // Without a project the sentence reads as the call to action instead, so
-      // the empty state never claims a project that does not exist yet.
-      const leading = named ? before : before.replace(/\s+$/, '')
+      const projectControl = (className, text) => h('button', {
+        ref: buttonRef,
+        type: 'button',
+        className,
+        'aria-haspopup': 'menu',
+        'aria-expanded': hero.open,
+        onClick: () => {
+          const current = heroStore.get()
+          heroStore.set({ ...current, open: !current.open })
+        },
+      }, text)
+
+      // Without a project the sentence reads as the call to action INSTEAD, as
+      // T3's headline does and as the comment above the branch always said: the
+      // template's words are dropped rather than stacked in front of the prompt,
+      // which is how this read before — "What should we build inChoose a project
+      // to start?", with the two halves run together and no space.
+      if (!named) {
+        return h('span', { ref: rootRef, className: 't3nss-headlineRoot' },
+          projectControl('t3nss-project t3nss-projectEmpty', t('headline.chooseHint')))
+      }
 
       return h('span', { ref: rootRef, className: 't3nss-headlineRoot' },
-        leading,
-        h('button', {
-          ref: buttonRef,
-          type: 'button',
-          className: named ? 't3nss-project' : 't3nss-project t3nss-projectEmpty',
-          'aria-haspopup': 'menu',
-          'aria-expanded': hero.open,
-          onClick: () => {
-            const current = heroStore.get()
-            heroStore.set({ ...current, open: !current.open })
-          },
-        }, named ? label : t('headline.chooseHint')),
+        before,
+        projectControl('t3nss-project', label),
         after,
       )
     }

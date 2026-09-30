@@ -32,6 +32,9 @@ Harness's own services. Please support the original project.
   this plugin fills the only additive hole in that row
   (`conversation.hero.brand.mark`) and suppresses the shipped title beside it.
   The template is configurable, and `{project}` marks where the control goes.
+  Until a project is chosen the sentence is not run at all: the headline is the
+  call to action alone — **Choose a project to start** — as T3's is, so the empty
+  state never claims a project that does not exist yet.
   DSH's own workspace chip shares the row below the headline with the agent-preset
   seat; with the headline carrying the project, that chip leaves the layout too,
   and the preset seat it used to lead re-seats on the composer's right edge — see
@@ -93,7 +96,7 @@ bundle's row in the profile's `cordis.patch.yml`:
 | Key | Default | Meaning |
 |---|---|---|
 | `headlineEnabled` | `true` | Replace the blank-session headline with the T3 sentence. |
-| `headlineText` | `What should we build in {project}?` | Headline template; `{project}` becomes the interactive project name. Without the hole the sentence renders as plain text. |
+| `headlineText` | `What should we build in {project}?` | Headline template; `{project}` becomes the interactive project name. Without the hole the sentence renders as plain text; with no project chosen it gives way to the call to action. |
 | `hideShippedHeadline` | `true` | Hide DSH's own "Into the Unknown" title beside the headline. |
 | `hideWorkspaceChip` | `true` | Hide the shipped workspace chip under the headline, which the headline supersedes. |
 | `effortEnabled` | `true` | Reasoning-effort picker in the composer tool row. |
