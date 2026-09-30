@@ -49,6 +49,15 @@ window.__ModuleLoader__.load({
     /** The two composer seats the effort control can occupy. */
     const EFFORT_SEATS = ['conversation.input.left', 'conversation.input.right']
 
+    /**
+     * Marks the hero workspace row as trailing while the headline carries the
+     * project affordance: DSH ships that row as a leading pair (its workspace
+     * chip + the agent-preset seat), and with the chip out of the layout the
+     * seat is the only control left in it. Set on `<html>` so the rule that
+     * trailers the seat can live in this plugin's own stylesheet.
+     */
+    const TRAILING_ROW_ATTR = 'data-t3nss-preset-trailing'
+
     const EN = {
       'headline.fallback': 'What should we build in {project}?',
       'headline.thisProject': 'this project',
@@ -484,19 +493,25 @@ window.__ModuleLoader__.load({
       }, [selectedId, selectedTitle])
 
       // The headline IS the project control, which leaves the shipped chip as a
-      // second affordance for the same choice. It stays laid out (hidden rather
-      // than removed) so it remains a stable anchor and a working fallback.
+      // second affordance for the same choice. Hiding it with `visibility` kept
+      // its box in the row — 226px for this repository's own name — so the
+      // agent-preset seat that shares the row floated at an x that followed the
+      // project's name instead of any axis on the screen. It leaves the layout
+      // entirely instead, and the row is re-declared as trailing: the preset
+      // seat, now the row's only control, rides the composer's shared right axis
+      // (see the `data-t3nss-preset-trailing` rule in the stylesheet). The chip
+      // stays in the DOM, unrendered, as the menu's fallback anchor.
       const hideChip = config.headlineEnabled && config.hideWorkspaceChip
       useLayoutEffect(() => {
         const chip = anchorRef?.current ?? null
         workspaceChip = chip
         if (chip === null || !hideChip) return undefined
-        const previous = { visibility: chip.style.visibility, pointerEvents: chip.style.pointerEvents }
-        chip.style.visibility = 'hidden'
-        chip.style.pointerEvents = 'none'
+        const previousDisplay = chip.style.display
+        chip.style.display = 'none'
+        document.documentElement.setAttribute(TRAILING_ROW_ATTR, '')
         return () => {
-          chip.style.visibility = previous.visibility
-          chip.style.pointerEvents = previous.pointerEvents
+          chip.style.display = previousDisplay
+          document.documentElement.removeAttribute(TRAILING_ROW_ATTR)
         }
       }, [anchorRef, hideChip])
 
@@ -948,6 +963,29 @@ window.__ModuleLoader__.load({
 .t3nss-chipGlyph { flex: 0 0 auto; opacity: 0.7; }
 .t3nss-chipLabel { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .t3nss-chipChevron { flex: 0 0 auto; opacity: 0.55; }
+
+/* The hero workspace row, re-declared as trailing while the headline carries the
+   project name. DSH ships that row as a LEADING pair — its workspace chip, then
+   the agent-preset seat, gap 2, padding 0 16px 0 20px — and hides the row's own
+   axis behind the card's side clearance. With the workspace chip removed from the
+   layout (the plugin's headline is the project control), the preset seat is the
+   row's only control, and leaving it in the leading slot parks it at an x that
+   follows the invisible chip's width: 226px for this repository's name, 84px for
+   a short one, nothing at all for the placeholder state.
+
+   Trailing it instead puts its border box on the composer's shared right axis —
+   the right edge the tool row's content box and the branch strip's border box
+   both end on, flush with the send button and with the strip's own ref control.
+   The trailing 8px is that axis's own dock inset, subtracted so the seat's LABEL
+   ends where the strip's right control ends rather than 8px past it. An auto
+   left margin, not justify-content on the row, keeps the slip correct at any row
+   width: the row is the shipped box, and an auto margin is what a flex item can
+   own from this side of the boundary. Both values ride the published variables,
+   so a profile that retunes the composer axis retunes this with it. */
+html[data-t3nss-preset-trailing] [data-slot='conversation.hero.agentPreset'] > * {
+  margin-left: auto;
+  margin-right: var(--dsh-composer-dock-inset, 8px);
+}
 
 /* The strip aligns on the composer's shared width axis: the card's CONTENT box,
    not the card itself. DSH publishes the three numbers that define that axis —

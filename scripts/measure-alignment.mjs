@@ -15,7 +15,12 @@
  *   3. the card, the strip and the headline share one horizontal centre;
  *   4. the strip's text sits 4px under the card;
  *   5. the reasoning-effort control is the same height as, and vertically
- *      centred with, the attach button and the permission control beside it.
+ *      centred with, the attach button and the permission control beside it;
+ *   6. the agent-preset seat in the hero workspace row ends on that same right
+ *      axis — it is the row's only control once the headline carries the
+ *      project, and it used to sit wherever the hidden chip's width left it;
+ *   7. the shipped workspace chip is out of the layout, so it cannot move the
+ *      seat again.
  *
  * Only node: builtins are used, so it runs on the bundled runtime as-is.
  */
@@ -111,6 +116,16 @@ const PROBE = `(() => {
         .filter(r => r.w > 0 && r.h > 20)
     : []
 
+  // The hero workspace row: the parent of the seat the plugin's headline shares
+  // with the shipped workspace picker. Its own first child is that shipped chip,
+  // which the plugin takes out of the layout; the preset seat is the slot
+  // occupant beside it, so the flex item is the occupant's own child (the slot
+  // wrapper is a contents-only box).
+  const workspaceSlot = document.querySelector('[data-slot="conversation.hero.workspace"]')
+  const heroRowEl = workspaceSlot ? workspaceSlot.parentElement : null
+  const heroChipEl = heroRowEl ? heroRowEl.firstElementChild : null
+  const presetSeatEl = document.querySelector('[data-slot="conversation.hero.agentPreset"] > *')
+
   return {
     hero: !!document.querySelector('[class*="composerHero"]'),
     phase: strip ? strip.dataset.phase : null,
@@ -131,6 +146,9 @@ const PROBE = `(() => {
       }
       return null
     })(),
+    heroRow: heroRowEl ? rect(heroRowEl) : null,
+    heroChip: heroChipEl ? rect(heroChipEl) : null,
+    presetSeat: presetSeatEl ? rect(presetSeatEl) : null,
     chip: chip ? rect(chip) : null,
     // The two controls immediately beside the effort control: same row band, to
     // its left. The submit button is deliberately taller and is not a peer.
@@ -226,6 +244,25 @@ if (m.chip !== null && m.leading.length > 0) {
   )
 } else {
   console.log('SKIP  5. effort control not mounted (the model advertises no effort levels)')
+}
+
+if (m.presetSeat !== null && m.heroRow !== null) {
+  console.log(`preset seat   ${m.presetSeat.x.toFixed(1)}..${m.presetSeat.right.toFixed(1)}`)
+  console.log(`workspace row ${m.heroRow.x.toFixed(1)}..${m.heroRow.right.toFixed(1)}`)
+  console.log(`shipped chip  ${m.heroChip === null ? 'absent' : `${m.heroChip.x.toFixed(1)}..${m.heroChip.right.toFixed(1)}`}`)
+  console.log('')
+  check(
+    '6. hero preset seat ends on the composer axis',
+    near(m.presetSeat.right, m.rowContent.right),
+    `${m.presetSeat.right.toFixed(1)} vs ${m.rowContent.right.toFixed(1)}`,
+  )
+  check(
+    '7. shipped workspace chip occupies no layout space',
+    m.heroChip === null || m.heroChip.w === 0,
+    m.heroChip === null ? 'absent' : `${m.heroChip.w}px wide`,
+  )
+} else {
+  console.log('SKIP  6. hero workspace row not mounted (no preset seat on this page)')
 }
 
 console.log('')

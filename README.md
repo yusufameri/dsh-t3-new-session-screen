@@ -32,6 +32,10 @@ Harness's own services. Please support the original project.
   this plugin fills the only additive hole in that row
   (`conversation.hero.brand.mark`) and suppresses the shipped title beside it.
   The template is configurable, and `{project}` marks where the control goes.
+  DSH's own workspace chip shares the row below the headline with the agent-preset
+  seat; with the headline carrying the project, that chip leaves the layout too,
+  and the preset seat it used to lead re-seats on the composer's right edge — see
+  [Alignment](#alignment).
 - **Reasoning effort.** A gauge control in the composer tool row showing the
   level the current model is actually using (`Off`, `Low`, `High`, `Max` for
   DeepSeek's own models). The menu carries each level's description and a check
@@ -114,6 +118,7 @@ The whole screen is contributed through DSH's own seams.
 | New project | `ctx.uiWorkspace.pickDirectory()` then `ctx.workspaces.create({ path })`. |
 | Reasoning effort | `conversation.input.left` / `.right` (list), reading `ctx.modelDirectories.directoryFor(sessionId)`. |
 | Branch strip | `conversation.input.dock` (one seat for both phases). |
+| Hero workspace row | No seat of its own. The shipped row is re-declared: its workspace chip leaves the layout and its agent-preset seat is trailed onto the composer axis, keyed off a `data-t3nss-preset-trailing` attribute the plugin sets on `<html>`. |
 | Working directory | `ctx.sessions.list.getSnapshot().byId[sessionId]?.cwd`. |
 | Git | The Host half's fenced `POST /t3-new-session/api` route (`config`, `git.status`, `git.branches`, `git.checkout`, `git.createBranch`), running `git` through `node:child_process`. |
 
@@ -147,11 +152,19 @@ profile it lands on the card's **content** box:
 | Composer tool row, content box | **506..1367** | 861px |
 | Headline stack (`HeroShell`) | **506..1367** | 861px |
 | **Branch strip** | **506..1367** | 861px |
+| **Hero preset seat** (right-aligned) | 1218..**1367** | 149px |
 
 All three share centre **936**, and the strip's text sits **4px** under the card —
 which is exactly what T3's `-mt-4` + `pt-5` pair nets out to. Inside the tool row
 the reasoning-effort control is 28px tall and vertically centred with the attach
 button and the permission control (all `513..541`).
+
+The preset seat is the row's only *label-sized* element, so only its right edge is
+a fixed number: the seat is content-sized (149px for `Standard mode`), and its
+left edge follows whatever DSH names the preset. Its right edge lands on the same
+1367 as the strip, the headline stack and the tool row's content box, which is
+also the send button's and the strip's trailing control's right edge — the row
+reads as one trailing column above the card rather than a chip mid-row.
 
 Two details are load-bearing and easy to regress:
 
@@ -164,8 +177,26 @@ Two details are load-bearing and easy to regress:
   `max-width` does the clamping while `margin-inline: auto` re-centres it — the
   same 861px at the same 506px start, from a different parent.
 
+The hero workspace row is the one place the plugin adjusts DSH's own box rather
+than filling a seat. Removing the shipped workspace chip from the row is what
+frees the preset seat, and it is the *layout* removal that matters:
+`visibility: hidden` — the obvious way to hide an element whose behaviour is
+still wanted — leaves its 226px box behind for this repository's own name, and
+the seat beside it then sits at whatever x that box ends on. Two things follow,
+and both are what the check below measures:
+
+- the chip is `display: none`d, not hidden, so nothing it used to size survives
+  in the row;
+- the seat is trailed with an auto left margin plus an 8px right margin, not with
+  `justify-content` on the row: the row belongs to DSH, the margins belong to the
+  seat, and an auto margin keeps the slip right at any row width — the row's own
+  right padding (16px) is one side clearance, so the 8px margin is what lands the
+  seat on the axis rather than on the card's outer edge.
+
 `scripts/measure-alignment.mjs` re-checks every number above against a running
-page and exits non-zero on a regression.
+page and exits non-zero on a regression — including checks 6 and 7, which fail on
+either half of that mistake: a seat that stops ending on 1367, and a chip that
+starts occupying space again.
 
 ## Differences from T3
 
